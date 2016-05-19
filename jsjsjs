@@ -1,0 +1,43 @@
+/**
+ *
+ * В html вписывайте один из статусов.
+ * status 0 = Не прочитаное или новое сообщение
+ * status 1 = Сообщение прочитано
+ * status 2 = Сообщение принято.
+ * status 3 = Сообщение отклонено
+ * status 4 = Сообщение в архив (Пока не реализовано)
+ * Created by Леонид on 18.05.2016.
+ *
+**/
+function myAjaxAccept (url, id, status) {
+    $.ajax({
+            url: id,
+            type: "POST",
+            data: {id:id, status:status},
+            success: function (data_id) {
+                $('.myClassGetId').attr('data-status', data_id.status);
+
+            },
+            error:function (error) {
+                alert (error.status);
+            }
+        }
+    );
+};
+var accept = {
+    clickNotice: function(classname) {
+        $(classname).click(function() {
+            statusOn(classname);
+        });
+    }
+};
+function statusOn(classname) {
+    var uri = 'http://pandajob.ru/module/notice/accept.php';
+    var id = $(classname).attr('id');
+    var status = $(classname).attr('data-status');
+    myAjaxAccept(uri, id, status);
+};
+accept.clickNotice('.toRead');
+accept.clickNotice('.toReject');
+accept.clickNotice('.toAccept');
+accept.clickNotice('.toArchive');

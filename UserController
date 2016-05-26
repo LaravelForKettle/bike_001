@@ -1,0 +1,35 @@
+namespace App\Http\Controllers;
+use App\Userlogin;
+use Illuminate\Http\Request;
+
+class UserController
+{
+    public function userGet () {
+        $userlogin = Userlogin::orderBy('created_at', 'ask')->get();
+        return view('userlogin', [
+            'userlogin' => $userlogin
+        ]);
+    }
+    public function userPost (Request $request) {
+        $validator = Validator::make($request->all(), [
+            'name' => 'required|max:255',
+            'email' => 'required|max:255',
+        ]);
+        if ($validator->fails()) {
+            return redirect('/')
+                ->withInput()
+                ->withErrors($validator);
+        }
+
+        $userlogin = new Userlogin;
+        $userlogin->name = $request->name;
+        $userlogin->email = $request->email;
+        $userlogin->save();
+
+        return redirect('/');
+    }
+    public function userDelete (Userlogin $userlogin) {
+        $userlogin->delete();
+        return redirect('/');
+    }
+}

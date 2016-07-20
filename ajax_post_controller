@@ -1,0 +1,40 @@
+<?php
+/**
+ * Created by PhpStorm.
+ * User: askanim
+ * Date: 28.06.2016
+ * Time: 16:21
+ */
+
+namespace App\Controllers\Ajax;
+
+
+use System\Http\Controller\Controllers;
+
+class Products extends Controllers
+{
+    public function get () {
+            if (!empty($_POST['Category'])) {
+                $newArray = [];
+                $newArray['Category'] = $_POST['Category'];
+                $newArray['numberOne'] = $_POST['numberOne'];
+                $newArray['numberTwo'] = $_POST['numberTwo'];
+                $newArray['limitAll'] = $_POST['limitAll'];
+                $newArray['on'] = $_POST['on'];
+                $newArray['sort'] = $_POST['sort'];
+                if ($newArray['on'] == 0) {
+                    $this->prepareData('Product\Product->getNavigation', 'PAGE' ,$newArray);
+                    $this->executeData('mod/navigation', '/SosedMarket');
+                }
+                elseif ($newArray['on'] == 1) {
+                    $this->prepareData('Product\Product->getProducts', 'PRODUCT' ,$newArray);
+                    $this->executeData('mod/products', '/SosedMarket');
+                }
+
+            }
+        else {
+            header("Location: /whoops");
+            exit();
+        }
+    }
+}

@@ -1,0 +1,214 @@
+<?php
+/**
+ * Created by PhpStorm.
+ * User: askanim
+ * Date: 08.06.2016
+ * Time: 12:30
+ */
+
+namespace System\Http\Controller;
+
+use System\Http\View\Mod;
+use System\Http\Model\Model;
+use App\Models As Models;
+use System\Http\View\Views;
+class Controllers
+{
+    protected $newObject;
+    protected $newMethod;
+    protected $prepareData = [];
+
+    public function controller ($value, $parameters = Null) {
+
+        /*
+         * Данный контроллер controller('string') осуществляет создание
+         * Класса и вызов метода переданного с ним
+         *
+         *
+         * */
+
+        $this->value($value);
+
+        $newObject = new $this->newObject();
+        $newMethod = $this->newMethod;
+
+        if ($parameters != Null) {
+            $newObject->$newMethod($parameters);
+        }
+        else {
+            $newObject->$newMethod();
+        }
+
+
+
+
+    }
+    public function getData ($value, $parameters = Null) {
+        /*
+         * Данный контроллер getData('string')
+         * Вызывает Класс и возвращает массив данных из вашего метода
+         *
+         *
+         * */
+
+        return $this->controller($value, $parameters);
+
+    }
+    protected function prepareData ($value, $key, $parameters = Null) {
+
+        /*
+         * Данный контроллер prepareData('string')
+         * Подготовливает классы перед отправкой
+         * Вызывает Класс и записывает массив данных из вашего метода
+         *
+         *
+         * */
+        $this->value($value);
+        $newObject = new $this->newObject();
+        $newMethod = $this->newMethod;
+        if ($parameters != Null) {
+            $this->prepareData[$key] = $newObject->$newMethod($parameters);
+        }
+        else {
+            $this->prepareData[$key] = $newObject->$newMethod();
+        }
+    }
+    protected function prepareArray ($key, $value = 'DEFAULT DATA ARRAY') {
+        $this->prepareData[$key] = $value;
+    }
+    protected function executeData ($nameTemp, $template) {
+
+        /*
+         * Данный Контроллер executeData
+         * Отправляет подготовленные Данные Моделей, в шаблон
+         *
+         *
+         * */
+
+        $view = New Views();
+        $view->view($nameTemp.'.html', $this->prepareData, $template);
+    }
+    private function ModuleEnabled($valueArray, $template) {
+        /*
+         * Контроллер предназначен
+         * Для отправки определённых моделей массивом
+         * Для конфигурации модуля. на php
+         * где $valueArray - Это массив передаваемых данных для view Модуля
+         * где $tamplate - Это короткий путь к модулю
+         *
+         *
+         *
+         * */
+
+        ob_start();
+            require ROOT.'/App/Views/Modules/'.$template.'.php';
+            $getModuleContent = ob_get_contents();
+        ob_end_clean();
+        return  $getModuleContent;
+
+
+    }
+    protected function dataModule ($key, $stringValue, $template) {
+        /*
+         * Контроллер предназнычен
+         * Для подготовительной отправки переменной в твиг
+         * из контроллера ModuleEnabled
+         * где $key - Это имя переменной вызываемой в TWIG.
+         * где $stringValue - Это путь к вашему классу и методу Class->Method
+         *
+         *
+         * */
+
+        $valueArray = $this->getData($stringValue);
+        $this->prepareData[$key] = $this->ModuleEnabled($valueArray, $template);
+
+    }
+    protected function dataView($value = [], $nameTemp ,$template) {
+
+        /*
+         * Данный контроллер dataView('string', 'имя ' ,'template')
+         * Отправляет не посредственно в шаблон полученный массив из
+         * переданного метода в переданном классе
+         *
+         *
+         *
+         * */
+        if (is_array($value) === FALSE)
+        {
+
+            $this->value($value);
+            $newObject = new $this->newObject();
+            $newMethod = $this->newMethod;
+            $arrParameters = $newObject->$newMethod();;
+
+        }
+        else {
+            $arrParameters = $value;
+        }
+        /*
+         * ВНИМАНИЕ!!!!
+         * Массив данных получаемый из вашей Модели Должен обязательно возвращать Массив в вашей модели.
+         *
+         * */
+        $view = New Views();
+        $view->view($nameTemp.'.html', $arrParameters, $template);
+
+    }
+    protected function getUri () {
+        /*
+         * Функция для возврата массива
+         * данных переданных по url
+         *
+         *
+         * */
+
+        $url = $_SERVER['REQUEST_URI'];
+        $url = explode('?', $url);
+        $url = $url[1];
+        $urlArray = explode('&&', $url);
+        $uriArray = [];
+        foreach ($urlArray As $uri ) {
+            $newArray = explode('=', $uri);
+            $uriArray[$newArray[0]] = $newArray[1];
+        };
+
+        return $uriArray;
+    }
+    protected function getUrl () {
+        /*
+         * Функция для возврата
+         * одног опереданного параметра в url
+         *
+         *
+         * */
+
+        $url = $_SERVER['REQUEST_URI'];
+        $url = explode('?', $url);
+        $url = $url[1];
+        $url = explode('=', $url);
+        return $url;
+    }
+    private function value ($value) {
+
+        /*
+         * Данная функция работает в пределах этого класса
+         * Она записыват путь к новому классу,
+         * и записывает название Метода.
+         *
+         *
+         * */
+
+        $newArray = explode ('->', $value);
+
+        $newClass = 'App\\Models\\'.$newArray[0]; // Получаем полный путь к классу
+
+
+        $this->newObject = $newClass;
+
+        $this->newMethod = $newArray[1];
+
+
+
+
+    }
+}

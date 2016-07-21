@@ -1,0 +1,259 @@
+<?php
+/**
+ * Created by PhpStorm.
+ * User: askanim
+ * Date: 04.06.2016
+ * Time: 18:03
+ */
+
+namespace System\Http\Model;
+
+use System\Db\Db;
+
+class Model
+{
+    protected $tableName;
+    protected $Select = 'SELECT ';
+    protected $Insert = 'INSERT INTO ';
+    protected $Update = 'UPDATE ';
+    protected $Delete = 'DELETE FROM ';
+    protected $where = '';
+    protected $joinSelect = '';
+    protected $on = '';
+    protected $join = '';
+    protected $order = '';
+    protected $limit = '';
+    public $id;
+
+
+    //Функция выбора Таблицы из БД.
+    public function table($tableName)
+{
+    $this->tableName = $tableName;
+    return $this;
+}
+
+    //Функция экранирующая данные при добавлении
+    public function prepareDataBase ($arr) {
+        $db = Db::getConnection();
+
+        $stringIns = [];
+
+        foreach ($arr as $key => $value) {
+            $stringIns[] = sprintf('%s=%s', $key, $db->quote($value));
+
+        };
+
+
+        return $stringIns = implode(', ', $stringIns);
+
+    }
+
+    //Функция добавления данных в таблицу БД
+    public function Insert($arr) {
+
+        $db = Db::getConnection();
+
+        $stringIns = $this->prepareDataBase($arr);
+
+        //echo $this->Insert . $this->tableName . ' SET ' . $stringIns.'<br>';
+
+        $result = $db->query($this->Insert . $this->tableName . ' SET ' . $stringIns);
+
+        $this->id = $db->lastInsertId();
+
+
+    }
+
+
+    //Функция обновления данных в таблице БД
+
+    public function Update($arr, $where = NULL) {
+
+        $db = Db::getConnection();
+
+        $stringUp = $this->prepareDataBase($arr);
+
+
+        if ($where != Null) {
+            $this->where = $this->whereIs($where);
+
+        }
+
+       //echo $this->Update . $this->tableName . ' SET ' . $stringUp . $this->where.'<br>';
+        $result = $db->query($this->Update . $this->tableName . ' SET ' . $stringUp . $this->where);
+
+    }
+
+    //Функция Удаления данных из таблицы в БД
+    public function del($where = NULL) {
+
+
+        $db = Db::getConnection();
+
+        if ($where != Null) {
+            $this->where = $this->whereIs($where);
+        }
+
+        $db->query($this->Delete . $this->tableName . $this->where);
+
+
+    }
+
+    //Общая функция условия при выполнении запроса к таблицы БД
+    public function whereIs ($arr, $val, $v) {
+        $db = Db::getConnection();
+        $stringVal = '';
+        $i = 0;
+        foreach ($arr as $key => $value) {
+            if($i == 0) {
+                $k = '';
+            }
+            else {
+                $k=$v;
+            }
+            $key = '`'.$key.'`';
+            $value = $db->quote($value);
+            $strVal = $key.$val.$value;
+            $stringVal = $stringVal.' '.$k. ' '.$strVal ;
+
+            $i++;
+        }
+
+
+        //echo $stringVal;
+        $this->where = ' WHERE '. $stringVal;
+        return $this->where;
+    }
+    //Функция условия при выполнении запроса к таблицы БД по средством цепочки
+    public function where($arr, $value = '=', $val = '&&')
+    {
+        $this->where = $this->whereIs($arr, $value, $val);
+
+        return $this;
+
+    }
+    // Функции соединения
+
+    private function Join ($nameTable, $join ,$arr = []) {
+
+        $stringVal = '';
+
+        foreach ($arr as $key => $value) {
+            $stringVal = $stringVal . ', '. $value ;
+        }
+        $this->joinSelect = $stringVal;
+        //echo $join.' JOIN '. $nameTable . . '<br>';
+        $this->join = $join.' JOIN '. $nameTable;
+
+    }
+    public function fullJoin ($nameTable, $arr = []) {
+
+        $this->Join($nameTable, ' FULL', $arr);
+
+        return $this;
+
+    }
+    public function innerJoin ($nameTable, $arr = []) {
+
+        $this->Join($nameTable, ' INNER', $arr);
+
+        return $this;
+
+    }
+    public function leftJoin ($nameTable, $arr = []) {
+        $this->Join($nameTable, ' LEFT', $arr);
+
+        return $this;
+    }
+    public function rightJoin ($nameTable, $arr = []) {
+        $this->Join($nameTable, ' RIGHT', $arr);
+
+        return $this;
+    }
+    //Функция сортировки
+    public function on ($arr, $val = '=') {
+        $db = Db::getConnection();
+        $this->on = ' ON ';
+        $onString = '';
+        foreach ($arr as $key => $value) {
+            $key = '`'.$key.'`';
+            $value = $db->quote($value);
+            $string = $key.$val.$value;
+            $onString = $onString.$string;
+        }
+        $this->on = $this->on.$onString;
+        //echo $this->on;
+        return $this;
+    }
+    public function order($string) {
+        $db = Db::getConnection();
+
+        $this->order = ' ORDER BY '.$string.' ';
+        return $this;
+    }
+    public function limit($arr) {
+        $db = Db::getConnection();
+        $string = '';
+        $i = 0;
+        foreach($arr as $key => $value) {
+
+            if($i == 0) {
+                $z = '';
+            }
+            else {
+                $z = ', ';
+            }
+            if (preg_match("/^[0-9]+$/", $value)){
+                $string = $string.$z.$value;
+                $i++;
+            }
+            else {
+                echo 'warning. Request 207 str. Model.php';
+                exit();
+            }
+        }
+
+        $this->limit = ' LIMIT '.$string;
+        return $this;
+    }
+    //Функция получения строк из таблицы
+    public function get($arr = ['*'])
+    {
+
+        $db = Db::getConnection();
+
+        $stringVal = '';
+
+        foreach ($arr as $key => $value) {
+
+            $stringVal = $stringVal . ', '. $value ;
+
+        };
+        $stringVal = trim($stringVal, ', ');
+
+        //echo $this->Select . $stringVal . $this->joinSelect . ' FROM ' . $this->tableName. $this->join. $this->on . $this->where .  $this->order . $this->limit.'<br>';
+
+        $result = $db->prepare($this->Select . $stringVal . $this->joinSelect . ' FROM ' . $this->tableName. $this->join. $this->on . $this->where .  $this->order . $this->limit);
+
+        $result->execute();
+
+
+        $baseArray = $result->fetchAll();
+
+        return $baseArray;
+    }
+    public function getClass () {
+        $className =  get_class($this);
+
+
+        $className = explode('\\', $className);
+
+        $className = array_pop($className);
+
+        return $className;
+    }
+}
+
+
+

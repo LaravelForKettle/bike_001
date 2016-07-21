@@ -1,0 +1,70 @@
+<?php
+/**
+ * Created by PhpStorm.
+ * User: askanim
+ * Date: 24.06.2016
+ * Time: 18:32
+ */
+
+namespace App\Models\Product;
+
+
+use System\Http\Model\Model;
+
+class Product extends Model
+{
+    public function getProducts($idArray)
+    {
+            //echo $idArray['numberOne'].''.$idArray['numberTwo'];
+            $result = $this->table('Product')
+                ->where(['parent_category' => $idArray['Category']])
+                ->limit([$idArray['numberOne'], $idArray['numberTwo']])
+                ->order($idArray['sort'])
+                ->get();
+
+
+        if (empty($result)) {
+                header("Location: /whoops");
+                exit();
+            }
+
+        return $result;
+
+
+    }
+    public function getNavigation($idArray) {
+        /*
+         * Костыль ну ладно... Потом перепишем
+         * Тут я делаю выборку всех товаров в этой категории и делю
+         * по странично исходя от лимита товара на страницу
+         * Короче строю пагинацию
+         *
+         *
+         * */
+
+        $resultTwo = $this->table('Product')
+            ->where(['parent_category' => $idArray['Category']])
+            ->get(['COUNT(id) As count']);
+        $ArrayPage = [];
+        $ArrayPage['products'] = [];
+        $pageNumber = $resultTwo[0]['count'] / $idArray['limitAll'];
+        $pageNumber = ceil($pageNumber);
+        $pageItems = 0;
+        for ($i = 1; $i<=$pageNumber; $i++ ) {
+                $ArrayPage['products'][$i]['id'] = $i;
+                $ArrayPage['products'][$i]['pageNext'] = $pageItems;
+                $pageItems = $pageItems+$idArray['limitAll'];
+                $ArrayPage['products'][$i]['pageNow'] = $idArray['limitAll'];
+        };
+        $ArrayPage['page'] = [
+            'max_item' => $idArray['limitAll'],
+            'count_prod' => $resultTwo[0]['count'],
+            'count_pages' => $pageNumber
+        ];
+
+        return $ArrayPage;
+    }
+    public function getPr($getID) {
+
+    }
+}
